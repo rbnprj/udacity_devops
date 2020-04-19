@@ -50,18 +50,15 @@ Resources:
       Properties:
         UserData:
           Fn::Base64: !Sub |
-            #!/bin/bash
-            apt-get update -y
-            apt-get install unzip awscli -y
-            apt-get install apache2 -y
-            systemctl start apache2.service
+            #!/bin/bash -xe
+            exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+            apt update -y
+            apt install -y apache2
+            systemctl start apache2
             systemctl enable apache2
-            cd /var/www/html
-            rm index.html
-            aws s3 cp s3://udagram-prj2.s3.amazonaws.com/udagram_site.zip
-            unzip -o udagram_site.zip
-            cp udagram_site/index.html .
-            
+            rm ../../var/www/html/index.html
+            wget -P ../../var/www/html https://udagram-prj2.s3.amazonaws.com/index.html
+
         ImageId: ami-07ebfd5b3428b6f4d
         SecurityGroups:
           - Ref: WebServerSecGroup
@@ -163,6 +160,6 @@ Resources:
 Outputs:
   WALB:
     Description: public url of load balancer
-    Value: !Join [ "", [ "http://", !GetAtt WebAppLB.DNSName ] ]
+    Value: !Join [ "", [ "http://", !GetAtt WebAppLB.DNSName, ] ]
     Export:
-            Name: !Sub ${EnvironmentName}-LB-DNSName
+      Name: !Sub ${EnvironmentName}-DNS-NAME
