@@ -55,11 +55,14 @@ Resources:
             apt-get install unzip awscli -y
             apt-get install apache2 -y
             systemctl start apache2.service
+            systemctl enable apache2
             cd /var/www/html
+            rm index.html
             aws s3 cp s3://udagram-prj2.s3.amazonaws.com/udagram_site.zip
             unzip -o udagram_site.zip
-            systemctl start apache2.service
-        ImageId: ami-0323c3dd2da7fb37d
+            cp udagram_site/index.html .
+            
+        ImageId: ami-07ebfd5b3428b6f4d
         SecurityGroups:
           - Ref: WebServerSecGroup
         InstanceType: t3.medium
@@ -116,7 +119,7 @@ Resources:
         HealthCheckProtocol: HTTP
         HealthCheckTimeoutSeconds: 8
         HealthyThresholdCount: 2
-        Port: 8080
+        Port: 80
         Protocol: HTTP
         UnhealthyThresholdCount: 5
         VpcId: 
@@ -131,16 +134,32 @@ Resources:
           Statement:
             - Effect: Allow
               Principal:
-                Service: ec2.amazonaws.com
-              Action: sts:AssumeRole
+                Service:
+                - ec2.amazonaws.com
+              Action:
+                - 'sts:AssumeRole'
         Path: /
-
+            
     ProfileWithRolesForOurApp:
       Type: AWS::IAM::InstanceProfile
       Properties:
         Path: /
         Roles:
           - !Ref UdacityS3ReadOnlyEC2
+
+    S3CodeBucketCopyPolicy:
+      Type: AWS::IAM::Policy
+      Properties: 
+        PolicyName: S3CodeBucketCopyPolicy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement: 
+            - Effect: Allow
+              Action:
+                - s3:GetObject
+              Resource: "*"
+        Roles: 
+        - !Ref UdacityS3ReadOnlyEC2
 Outputs:
   WALB:
     Description: public url of load balancer
